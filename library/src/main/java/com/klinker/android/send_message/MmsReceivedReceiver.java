@@ -80,7 +80,7 @@ public abstract class MmsReceivedReceiver extends BroadcastReceiver {
 
     public abstract void onError(Context context, String error);
 
-    public MmscInformation getMmscInfoForReceptionAck() {
+    public MmscInformation getMmscInfoForReceptionAck(Context context, int subscriptionId) {
         // Override this and provide the MMSC to send the ACK to.
         // some carriers will download duplicate MMS messages without this ACK. When using the
         // system sending method, apparently Google does not do this for us. Not sure why.
@@ -126,7 +126,7 @@ public abstract class MmsReceivedReceiver extends BroadcastReceiver {
                     return;
                 }
 
-                List<CommonAsyncTask> tasks = getNotificationTask(context, intent, response);
+                List<CommonAsyncTask> tasks = getNotificationTask(context, intent, response, subscriptionId);
                 messageUri = DownloadRequest.persist(context, response, mmsConfig,
                         intent.getStringExtra(EXTRA_LOCATION_URL), subscriptionId, null);
 
@@ -380,13 +380,13 @@ public abstract class MmsReceivedReceiver extends BroadcastReceiver {
         }
     }
 
-    private List<CommonAsyncTask> getNotificationTask(Context context, Intent intent, byte[] response) {
+    private List<CommonAsyncTask> getNotificationTask(Context context, Intent intent, byte[] response, int subscriptionId) {
         if (response.length == 0) {
             Log.v(TAG, "MmsReceivedReceiver.sendNotification blank response");
             return null;
         }
 
-        if (getMmscInfoForReceptionAck() == null) {
+        if (getMmscInfoForReceptionAck(context, subscriptionId) == null) {
             Log.v(TAG, "No MMSC information set, so no notification tasks will be able to complete");
             return null;
         }
@@ -401,7 +401,7 @@ public abstract class MmsReceivedReceiver extends BroadcastReceiver {
 
         try {
             final NotificationInd ind = getNotificationInd(context, intent);
-            final MmscInformation mmsc = getMmscInfoForReceptionAck();
+            final MmscInformation mmsc = getMmscInfoForReceptionAck(context, subscriptionId);
             final TransactionSettings transactionSettings = new TransactionSettings(mmsc.mmscUrl, mmsc.mmsProxy, mmsc.proxyPort);
 
             final List<CommonAsyncTask> responseTasks = new ArrayList<>();
