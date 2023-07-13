@@ -46,21 +46,26 @@ import com.klinker.android.send_message.Transaction;
 public class DownloadRequest extends MmsRequest {
     private static final String TAG = "DownloadRequest";
 
-    private static final String LOCATION_SELECTION =
-            Telephony.Mms.MESSAGE_TYPE + "=? AND " + Telephony.Mms.CONTENT_LOCATION + " =?";
+    private static final String TRANSACTION_ID_SELECTION =
+            Telephony.Mms.MESSAGE_TYPE + "=? AND " + Telephony.Mms.TRANSACTION_ID + " =?";
 
-    static final String[] PROJECTION = new String[]{
+    static final String[] CONTENT_LOCATION_PROJECTION = new String[]{
             Telephony.Mms.CONTENT_LOCATION
+    };
+
+    static final String[] TRANSACTION_ID_PROJECTION = new String[]{
+            Telephony.Mms.TRANSACTION_ID
     };
 
     // The indexes of the columns which must be consistent with above PROJECTION.
     static final int COLUMN_CONTENT_LOCATION = 0;
 
     private final String mLocationUrl;
+    private final String mTransactionId;
     private final PendingIntent mDownloadedIntent;
     private final Uri mContentUri;
 
-    public DownloadRequest(RequestManager manager, int subId, String locationUrl,
+    public DownloadRequest(RequestManager manager, int subId, String locationUrl, String transactionId,
                            Uri contentUri, PendingIntent downloadedIntent, String creator,
                            Bundle configOverrides, Context context) throws MmsException {
         super(manager, subId, creator, configOverrides);
@@ -69,6 +74,12 @@ public class DownloadRequest extends MmsRequest {
             mLocationUrl = getContentLocation(context, contentUri);
         } else {
             mLocationUrl = locationUrl;
+        }
+
+        if (transactionId == null) {
+            mTransactionId = getTransactionId(context, contentUri);
+        } else {
+            mTransactionId = transactionId;
         }
 
         mDownloadedIntent = downloadedIntent;
@@ -110,11 +121,11 @@ public class DownloadRequest extends MmsRequest {
             return null;
         }
 
-        return persist(context, response, mMmsConfig, mLocationUrl, mSubId, mCreator);
+        return persist(context, response, mMmsConfig, mLocationUrl, mTransactionId, mSubId, mCreator);
     }
 
     public static Uri persist(Context context, byte[] response, MmsConfig.Overridden mmsConfig,
-                              String locationUrl, int subId, String creator) {
+                              String locationUrl, String transactionId, int subId, String creator) {
         // Let any mms apps running as secondary user know that a new mms has been downloaded.
         notifyOfDownload(context);
 
@@ -129,10 +140,10 @@ public class DownloadRequest extends MmsRequest {
                     context.getContentResolver(),
                     Telephony.Mms.CONTENT_URI,
                     values,
-                    LOCATION_SELECTION,
+                    TRANSACTION_ID_SELECTION,
                     new String[]{
                             Integer.toString(PduHeaders.MESSAGE_TYPE_NOTIFICATION_IND),
-                            locationUrl
+                            transactionId
                     });
             return null;
         }
@@ -184,6 +195,7 @@ public class DownloadRequest extends MmsRequest {
             final ContentValues values = new ContentValues();
             values.put(Telephony.Mms.DATE, System.currentTimeMillis() / 1000L);
             values.put(Telephony.Mms.CONTENT_LOCATION, locationUrl);
+            values.put(Telephony.Mms.TRANSACTION_ID, transactionId);
             values.put(Telephony.Mms.READ, 0);
             values.put(Telephony.Mms.SEEN, 0);
             if (!TextUtils.isEmpty(creator)) {
@@ -228,7 +240,7 @@ public class DownloadRequest extends MmsRequest {
             SqliteWrapper.delete(context,
                     context.getContentResolver(),
                     Telephony.Mms.CONTENT_URI,
-                    LOCATION_SELECTION,
+                    TRANSACTION_ID_SELECTION,
                     new String[]{
                             Integer.toString(PduHeaders.MESSAGE_TYPE_NOTIFICATION_IND),
                             locationUrl
@@ -328,7 +340,7 @@ public class DownloadRequest extends MmsRequest {
     private String getContentLocation(Context context, Uri uri)
             throws MmsException {
         Cursor cursor = android.database.sqlite.SqliteWrapper.query(context, context.getContentResolver(),
-                uri, PROJECTION, null, null, null);
+                uri, CONTENT_LOCATION_PROJECTION, null, null, null);
 
         if (cursor != null) {
             try {
@@ -343,6 +355,26 @@ public class DownloadRequest extends MmsRequest {
         }
 
         throw new MmsException("Cannot get X-Mms-Content-Location from: " + uri);
+    }
+
+    private String getTransactionId(Context context, Uri uri)
+            throws MmsException {
+        Cursor cursor = android.database.sqlite.SqliteWrapper.query(context, context.getContentResolver(),
+                uri, TRANSACTION_ID_PROJECTION, null, null, null);
+
+        if (cursor != null) {
+            try {
+                if ((cursor.getCount() == 1) && cursor.moveToFirst()) {
+                    String transactionId = cursor.getString(COLUMN_CONTENT_LOCATION);
+                    cursor.close();
+                    return transactionId;
+                }
+            } finally {
+                cursor.close();
+            }
+        }
+
+        throw new MmsException("Cannot get Transaction-id from: " + uri);
     }
 
     private static Long getId(Context context, String location) {

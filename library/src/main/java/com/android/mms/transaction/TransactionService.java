@@ -333,7 +333,7 @@ public class TransactionService extends Service implements Observer {
                                     Uri uri = ContentUris.withAppendedId(Mms.CONTENT_URI,
                                             cursor.getLong(columnIndexOfMsgId));
                                     com.android.mms.transaction.DownloadManager.getInstance().
-                                            downloadMultimediaMessage(this, PushReceiver.getContentLocation(this, uri), uri, false, subId);
+                                            downloadMultimediaMessage(this, PushReceiver.getContentLocation(this, uri), PushReceiver.getTransactionId(this, uri), uri, false, subId);
 
                                     // can't handle many messages at once.
                                     break;
@@ -347,7 +347,9 @@ public class TransactionService extends Service implements Observer {
                                     MmsRequestManager requestManager = new MmsRequestManager(this);
                                     DownloadRequest request = new DownloadRequest(requestManager,
                                             Utils.getDefaultSubscriptionId(),
-                                            PushReceiver.getContentLocation(this, uri), uri, null, null,
+                                            PushReceiver.getContentLocation(this, uri),
+                                            PushReceiver.getTransactionId(this, uri),
+                                            uri, null, null,
                                             null, this);
                                     MmsNetworkManager manager = new MmsNetworkManager(this, Utils.getDefaultSubscriptionId());
                                     request.execute(this, manager);
@@ -860,7 +862,9 @@ public class TransactionService extends Service implements Observer {
                                     Uri u = Uri.parse(args.getUri());
                                     com.android.mms.transaction.DownloadManager.getInstance().
                                             downloadMultimediaMessage(TransactionService.this,
-                                                    ((RetrieveTransaction) transaction).getContentLocation(TransactionService.this, u), u, false, Settings.DEFAULT_SUBSCRIPTION_ID);
+                                                    ((RetrieveTransaction) transaction).getContentLocation(TransactionService.this, u),
+                                                    ((RetrieveTransaction) transaction).getTransactionId(TransactionService.this, u),
+                                                    u, false, Settings.DEFAULT_SUBSCRIPTION_ID);
                                     return;
                                 }
 

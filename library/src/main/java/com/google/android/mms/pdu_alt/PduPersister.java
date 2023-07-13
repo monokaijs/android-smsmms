@@ -1267,6 +1267,10 @@ public class PduPersister {
         return toIsoString(pdu.getPduHeaders().getTextString(PduHeaders.CONTENT_LOCATION));
     }
 
+    public String getTransactionIdFromPduHeader(GenericPdu pdu) {
+        return toIsoString(pdu.getPduHeaders().getTextString(PduHeaders.TRANSACTION_ID));
+    }
+
     /**
      * Persist a PDU object to specific location in the storage.
      *
