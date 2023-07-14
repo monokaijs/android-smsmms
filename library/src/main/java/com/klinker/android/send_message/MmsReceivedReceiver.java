@@ -62,6 +62,7 @@ public abstract class MmsReceivedReceiver extends BroadcastReceiver {
     public static final String MMS_RECEIVED = "com.klinker.android.messaging.MMS_RECEIVED";
     public static final String EXTRA_FILE_PATH = "file_path";
     public static final String EXTRA_LOCATION_URL = "location_url";
+    public static final String EXTRA_TRANSACTION_ID = "transaction_id";
     public static final String EXTRA_TRIGGER_PUSH = "trigger_push";
     public static final String EXTRA_URI = "notification_ind_uri";
     public static final String SUBSCRIPTION_ID = "subscription_id";
@@ -97,6 +98,7 @@ public abstract class MmsReceivedReceiver extends BroadcastReceiver {
         final String path = intent.getStringExtra(EXTRA_FILE_PATH);
         final int subscriptionId = intent.getIntExtra(SUBSCRIPTION_ID, Utils.getDefaultSubscriptionId());
         final String locationUrl = intent.getStringExtra(EXTRA_LOCATION_URL);
+        final String transactionId = intent.getStringExtra(EXTRA_TRANSACTION_ID);
         Log.v(TAG, path);
 
         new Thread(() -> {
@@ -128,7 +130,7 @@ public abstract class MmsReceivedReceiver extends BroadcastReceiver {
 
                 List<CommonAsyncTask> tasks = getNotificationTask(context, intent, response, subscriptionId);
                 messageUri = DownloadRequest.persist(context, response, mmsConfig,
-                        intent.getStringExtra(EXTRA_LOCATION_URL), subscriptionId, null);
+                        locationUrl, transactionId, subscriptionId, null);
 
                 Log.v(TAG, "response saved successfully");
                 Log.v(TAG, "response length: " + response.length);

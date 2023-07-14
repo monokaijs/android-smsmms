@@ -37,6 +37,7 @@ import java.io.IOException;
 import static com.google.android.mms.pdu_alt.PduHeaders.STATUS_RETRIEVED;
 import static com.klinker.android.send_message.MmsReceivedReceiver.EXTRA_FILE_PATH;
 import static com.klinker.android.send_message.MmsReceivedReceiver.EXTRA_LOCATION_URL;
+import static com.klinker.android.send_message.MmsReceivedReceiver.EXTRA_TRANSACTION_ID;
 import static com.klinker.android.send_message.MmsReceivedReceiver.EXTRA_TRIGGER_PUSH;
 import static com.klinker.android.send_message.MmsReceivedReceiver.EXTRA_URI;
 
@@ -75,6 +76,7 @@ public class MmsReceivedService extends IntentService {
             DownloadRequest.persist(this, response,
                     new MmsConfig.Overridden(new MmsConfig(this), null),
                     intent.getStringExtra(EXTRA_LOCATION_URL),
+                    intent.getStringExtra(EXTRA_TRANSACTION_ID),
                     Utils.getDefaultSubscriptionId(), null);
 
             Log.v(TAG, "response saved successfully");

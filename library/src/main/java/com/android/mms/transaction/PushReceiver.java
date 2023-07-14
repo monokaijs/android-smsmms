@@ -77,6 +77,11 @@ public class PushReceiver extends BroadcastReceiver {
             Mms.LOCKED
     };
 
+    static final String[] TRANSACTION_ID_PROJECTION = new String[]{
+            Mms.CONTENT_LOCATION,
+            Mms.LOCKED
+    };
+
     static final int COLUMN_CONTENT_LOCATION = 0;
 
     private static Set<String> downloadedUrls = new HashSet<String>();
@@ -199,6 +204,16 @@ public class PushReceiver extends BroadcastReceiver {
                                 downloadedUrls.add(location);
                             }
 
+                            String transactionId;
+                            try {
+                                transactionId = getTransactionId(mContext, uri);
+                            } catch (MmsException ex) {
+                                transactionId = p.getTransactionIdFromPduHeader(pdu);
+                                if (TextUtils.isEmpty(transactionId)) {
+                                    throw ex;
+                                }
+                            }
+
                             Log.v(TAG, "receiving on a lollipop+ device");
                             boolean useSystem = true;
 
@@ -211,20 +226,20 @@ public class PushReceiver extends BroadcastReceiver {
                             }
 
                             if (useSystem) {
-                                DownloadManager.getInstance().downloadMultimediaMessage(mContext, location, uri, true, subId);
+                                DownloadManager.getInstance().downloadMultimediaMessage(mContext, location, transactionId, uri, true, subId);
                             } else {
                                 Log.v(TAG, "receiving with lollipop method");
                                 MmsRequestManager requestManager = new MmsRequestManager(mContext);
                                 DownloadRequest request = new DownloadRequest(requestManager,
                                         Utils.getDefaultSubscriptionId(),
-                                        location, uri, null, null,
+                                        location, transactionId, uri, null, null,
                                         null, mContext);
                                 MmsNetworkManager manager = new MmsNetworkManager(mContext, Utils.getDefaultSubscriptionId());
                                 request.execute(mContext, manager);
                             }
                         } else if (LOCAL_LOGV) {
                             Log.v(TAG, "Skip downloading duplicate message: "
-                                    + new String(nInd.getContentLocation()));
+                                    + new String(nInd.getTransactionId()));
                         }
                         break;
                     }
@@ -288,6 +303,26 @@ public class PushReceiver extends BroadcastReceiver {
         throw new MmsException("Cannot get X-Mms-Content-Location from: " + uri);
     }
 
+    public static String getTransactionId(Context context, Uri uri)
+            throws MmsException {
+        Cursor cursor = SqliteWrapper.query(context, context.getContentResolver(),
+                uri, TRANSACTION_ID_PROJECTION, null, null, null);
+
+        if (cursor != null) {
+            try {
+                if ((cursor.getCount() == 1) && cursor.moveToFirst()) {
+                    String transactionId = cursor.getString(COLUMN_CONTENT_LOCATION);
+                    cursor.close();
+                    return transactionId;
+                }
+            } finally {
+                cursor.close();
+            }
+        }
+
+        throw new MmsException("Cannot get Transaction-id from: " + uri);
+    }
+
     private static long findThreadId(Context context, GenericPdu pdu, int type) {
         String messageId;
 
@@ -328,10 +363,10 @@ public class PushReceiver extends BroadcastReceiver {
 
     private static boolean isDuplicateNotification(
             Context context, NotificationInd nInd) {
-        byte[] rawLocation = nInd.getContentLocation();
-        if (rawLocation != null) {
-            String location = new String(rawLocation);
-            String selection = Mms.CONTENT_LOCATION + " = ?";
+        byte[] rawTransactionId = nInd.getTransactionId();
+        if (rawTransactionId != null) {
+            String location = new String(rawTransactionId);
+            String selection = Mms.TRANSACTION_ID + " = ?";
             String[] selectionArgs = new String[]{location};
             Cursor cursor = SqliteWrapper.query(
                     context, context.getContentResolver(),

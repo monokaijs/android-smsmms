@@ -42,7 +42,7 @@ public class DownloadManager {
 
     }
 
-    public void downloadMultimediaMessage(final Context context, final String location, Uri uri, boolean byPush, int subscriptionId) {
+    public void downloadMultimediaMessage(final Context context, final String location, final String transactionId, Uri uri, boolean byPush, int subscriptionId) {
         if (location == null || mMap.get(location) != null) {
             return;
         }
@@ -64,6 +64,7 @@ public class DownloadManager {
         Intent download = new Intent(receiver.mAction);
         download.putExtra(MmsReceivedReceiver.EXTRA_FILE_PATH, mDownloadFile.getPath());
         download.putExtra(MmsReceivedReceiver.EXTRA_LOCATION_URL, location);
+        download.putExtra(MmsReceivedReceiver.EXTRA_TRANSACTION_ID, transactionId);
         download.putExtra(MmsReceivedReceiver.EXTRA_TRIGGER_PUSH, byPush);
         download.putExtra(MmsReceivedReceiver.EXTRA_URI, uri);
         download.putExtra(MmsReceivedReceiver.SUBSCRIPTION_ID, subscriptionId);

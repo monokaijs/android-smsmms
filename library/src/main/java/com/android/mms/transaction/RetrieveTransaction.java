@@ -70,6 +70,10 @@ public class RetrieveTransaction extends Transaction implements Runnable {
         Mms.LOCKED
     };
 
+    static final String[] TRANSACTION_ID_PROJECTION = new String[] {
+            Mms.TRANSACTION_ID
+    };
+
     // The indexes of the columns which must be consistent with above PROJECTION.
     static final int COLUMN_CONTENT_LOCATION      = 0;
     static final int COLUMN_LOCKED                = 1;
@@ -116,6 +120,28 @@ public class RetrieveTransaction extends Transaction implements Runnable {
         }
 
         throw new MmsException("Cannot get X-Mms-Content-Location from: " + uri);
+    }
+
+    public String getTransactionId(Context context, Uri uri)
+            throws MmsException {
+        Cursor cursor = SqliteWrapper.query(context, context.getContentResolver(),
+                uri, TRANSACTION_ID_PROJECTION, null, null, null);
+
+        if (cursor != null) {
+            try {
+                if ((cursor.getCount() == 1) && cursor.moveToFirst()) {
+                    // Get the locked flag from the M-Notification.ind so it can be transferred
+                    // to the real message after the download.
+                    String transactionId = cursor.getString(COLUMN_CONTENT_LOCATION);
+                    cursor.close();
+                    return transactionId;
+                }
+            } finally {
+                cursor.close();
+            }
+        }
+
+        throw new MmsException("Cannot get Transaction-id from: " + uri);
     }
 
     /*
