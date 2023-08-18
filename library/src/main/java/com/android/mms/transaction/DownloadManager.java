@@ -51,7 +51,13 @@ public class DownloadManager {
         mMap.put(location, receiver);
 
         // Use unique action in order to avoid cancellation of notifying download result.
-        context.getApplicationContext().registerReceiver(receiver, new IntentFilter(receiver.mAction));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            context.getApplicationContext().registerReceiver(
+                    receiver, new IntentFilter(receiver.mAction), Context.RECEIVER_NOT_EXPORTED
+            );
+        } else {
+            context.getApplicationContext().registerReceiver(receiver, new IntentFilter(receiver.mAction));
+        }
 
         Log.v(TAG, "receiving with system method");
         final String fileName = "download." + Math.abs(new Random().nextLong()) + ".dat";
@@ -61,6 +67,7 @@ public class DownloadManager {
                 .path(fileName)
                 .scheme(ContentResolver.SCHEME_CONTENT)
                 .build();
+
         Intent download = new Intent(receiver.mAction);
         download.putExtra(MmsReceivedReceiver.EXTRA_FILE_PATH, mDownloadFile.getPath());
         download.putExtra(MmsReceivedReceiver.EXTRA_LOCATION_URL, location);
