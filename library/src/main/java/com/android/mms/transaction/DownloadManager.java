@@ -53,7 +53,7 @@ public class DownloadManager {
         // Use unique action in order to avoid cancellation of notifying download result.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             context.getApplicationContext().registerReceiver(
-                    receiver, new IntentFilter(receiver.mAction), Context.RECEIVER_NOT_EXPORTED
+                    receiver, new IntentFilter(receiver.mAction), Context.RECEIVER_EXPORTED
             );
         } else {
             context.getApplicationContext().registerReceiver(receiver, new IntentFilter(receiver.mAction));
@@ -68,8 +68,7 @@ public class DownloadManager {
                 .scheme(ContentResolver.SCHEME_CONTENT)
                 .build();
 
-        Intent download = new Intent(context.getApplicationContext(), MmsDownloadReceiver.class);
-        download.setAction(receiver.mAction);
+        Intent download = new Intent(receiver.mAction);
         download.putExtra(MmsReceivedReceiver.EXTRA_FILE_PATH, mDownloadFile.getPath());
         download.putExtra(MmsReceivedReceiver.EXTRA_LOCATION_URL, location);
         download.putExtra(MmsReceivedReceiver.EXTRA_TRANSACTION_ID, transactionId);
